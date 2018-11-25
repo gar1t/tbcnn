@@ -1,4 +1,4 @@
-"""Train the cnn model as  described in Lili Mou et al. (2015) 
+"""Train the cnn model as  described in Lili Mou et al. (2015)
 https://arxiv.org/pdf/1409.5718.pdf"""
 
 import os
@@ -12,7 +12,11 @@ from classifier.tbcnn.parameters import LEARN_RATE, EPOCHS, \
     CHECKPOINT_EVERY, BATCH_SIZE
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 
-def train_model(logdir, infile, embedfile, epochs=EPOCHS):
+def train_model(logdir, infile, embedfile,
+                epochs=EPOCHS,
+                learning_rate=LEARN_RATE,
+                batch_size=BATCH_SIZE,
+                checkpoint_every=CHECKPOINT_EVERY):
     """Train a classifier to label ASTs"""
 
     with open(infile, 'rb') as fh:
@@ -31,7 +35,7 @@ def train_model(logdir, infile, embedfile, epochs=EPOCHS):
     out_node = network.out_layer(hidden_node)
     labels_node, loss_node = network.loss_layer(hidden_node, len(labels))
 
-    optimizer = tf.train.AdamOptimizer(LEARN_RATE)
+    optimizer = tf.train.AdamOptimizer(learning_rate)
     train_step = optimizer.minimize(loss_node)
 
     tf.summary.scalar('loss', loss_node)
@@ -47,13 +51,13 @@ def train_model(logdir, infile, embedfile, epochs=EPOCHS):
 
     checkfile = os.path.join(logdir, 'cnn_tree.ckpt')
 
-    num_batches = len(trees) // BATCH_SIZE + (1 if len(trees) % BATCH_SIZE != 0 else 0)
+    num_batches = len(trees) // batch_size + (1 if len(trees) % batch_size != 0 else 0)
     for epoch in range(1, epochs+1):
         for i, batch in enumerate(sampling.batch_samples(
-            sampling.gen_samples(trees, labels, embeddings, embed_lookup), BATCH_SIZE
+            sampling.gen_samples(trees, labels, embeddings, embed_lookup), batch_size
         )):
             nodes, children, batch_labels = batch
-            step = (epoch - 1) * num_batches + i * BATCH_SIZE
+            step = (epoch - 1) * num_batches + i * batch_size
 
             if not nodes:
                 continue # don't try to train on an empty batch
@@ -74,7 +78,7 @@ def train_model(logdir, infile, embedfile, epochs=EPOCHS):
             )
 
             writer.add_summary(summary, step)
-            if step % CHECKPOINT_EVERY == 0:
+            if step % checkpoint_every == 0:
                 # save state so we can resume later
                 saver.save(sess, os.path.join(checkfile), step)
                 print('Checkpoint saved.')
@@ -102,4 +106,3 @@ def train_model(logdir, infile, embedfile, epochs=EPOCHS):
     print('Accuracy:', accuracy_score(correct_labels, predictions))
     print(classification_report(correct_labels, predictions, target_names=target_names))
     print(confusion_matrix(correct_labels, predictions))
-

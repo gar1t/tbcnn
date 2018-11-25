@@ -11,17 +11,22 @@ from vectorizer.ast2vec.parameters import \
     NUM_FEATURES, LEARN_RATE, BATCH_SIZE, EPOCHS, CHECKPOINT_EVERY
 from tensorflow.contrib.tensorboard.plugins import projector
 
-def learn_vectors(samples, logdir, outfile, num_feats=NUM_FEATURES, epochs=EPOCHS):
+def learn_vectors(samples, logdir, outfile,
+                  num_feats=NUM_FEATURES,
+                  epochs=EPOCHS,
+                  learning_rate=LEARN_RATE,
+                  batch_size=BATCH_SIZE,
+                  checkpoint_every=CHECKPOINT_EVERY):
     """Learn a vector representation of Python AST nodes."""
 
     # build the inputs and outputs of the network
     input_node, label_node, embed_node, loss_node = network.init_net(
         num_feats=num_feats,
-        batch_size=BATCH_SIZE
+        batch_size=batch_size
     )
 
     # use gradient descent with momentum to minimize the training objective
-    train_step = tf.train.GradientDescentOptimizer(LEARN_RATE). \
+    train_step = tf.train.GradientDescentOptimizer(learning_rate). \
                     minimize(loss_node)
 
     tf.summary.scalar('loss', loss_node)
@@ -47,7 +52,7 @@ def learn_vectors(samples, logdir, outfile, num_feats=NUM_FEATURES, epochs=EPOCH
 
     step = 0
     for epoch in range(1, epochs+1):
-        sample_gen = sampling.batch_samples(samples, BATCH_SIZE)
+        sample_gen = sampling.batch_samples(samples, batch_size)
         for batch in sample_gen:
             input_batch, label_batch = batch
 
@@ -61,7 +66,7 @@ def learn_vectors(samples, logdir, outfile, num_feats=NUM_FEATURES, epochs=EPOCH
 
             print('Epoch: ', epoch, 'Loss: ', err)
             writer.add_summary(summary, step)
-            if step % CHECKPOINT_EVERY == 0:
+            if step % checkpoint_every == 0:
                 # save state so we can resume later
                 saver.save(sess, os.path.join(checkfile), step)
                 print('Checkpoint saved.')

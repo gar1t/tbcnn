@@ -7,6 +7,7 @@ import sys
 import pickle
 import vectorizer.ast2vec.train as ast2vec
 from vectorizer.node_map import NODE_LIST
+from vectorizer.ast2vec import parameters as ast2vec_params
 
 LOG_FILE = 'vectorizer/vectorizer.log'
 
@@ -57,10 +58,45 @@ def main():
         help='Directory to store checkpoints for TensorFlow'
     )
 
+    parser.add_argument(
+        '--epochs',
+        type=int,
+        default=ast2vec_params.EPOCHS,
+        help='Number of epochs to train')
+
+    parser.add_argument(
+        '--batch-size',
+        type=int,
+        default=ast2vec_params.BATCH_SIZE,
+        help='Training batch size')
+
+    parser.add_argument(
+        '--learning-rate',
+        type=float,
+        default=ast2vec_params.LEARN_RATE,
+        help='Training learning rate')
+
+    parser.add_argument(
+        '--checkpoint-every',
+        type=int,
+        default=ast2vec_params.CHECKPOINT_EVERY,
+        help='Number of training steps for each checkpoint')
+
     args = parser.parse_args()
 
     with open(args.infile, 'rb') as sample_file:
         samples = pickle.load(sample_file)
 
     if args.model.lower() == 'ast2vec':
-        ast2vec.learn_vectors(samples, args.checkpoint, args.outfile)
+        ast2vec.learn_vectors(
+            samples,
+            args.checkpoint,
+            args.outfile,
+            epochs=args.epochs,
+            learning_rate=args.learning_rate,
+            batch_size=args.batch_size,
+            checkpoint_every=args.checkpoint_every
+        )
+
+if __name__ == "__main__":
+    main()

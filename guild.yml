@@ -1,0 +1,94 @@
+- model: tbcnn
+  description: Efficient TBCNN
+  operations:
+    sample-nodes:
+      description: Sample AST nodes from the GitHub data
+      main:
+        sampler/commands nodes
+          --in algorithms.pkl
+          --out algorithm_nodes.pkl
+      requires: algorithms-data
+    sample-trees:
+      description: Sample small trees from GitHub data
+      main:
+        sampler/commands trees
+          --in algorithms.pkl
+          --out algorithm_trees.pkl
+      requires: algorithms-data
+      flags:
+        max-size:
+          description: Ignore trees with more than max-size nodes
+          default: 10000
+          arg-name: maxsize
+        test-split:
+          description: Percent to save as test data
+          default: 30
+          arg-name: test
+    vectorize:
+      description: Generate vector embedding
+      main:
+        vectorizer/commands ast2vec
+          --in algorithm_nodes.pkl
+          --out vectors.pkl
+          --checkpoint algorithms
+      requires: sampled-nodes
+      flags:
+        epochs:
+          description: Number of epochs to train
+          default: 20
+        learning-rate:
+          description: Learning rate
+          default: 0.01
+        batch-size:
+          description: Batch size
+          default: 256
+    train:
+      description: Train TBCNN classifier
+      main:
+        classifier/commands train tbcnn
+          --in algorithm_trees.pkl
+          --embed vectors.pkl
+          --logdir .
+      requires:
+        - sampled-trees
+        - vectorized-embeddings
+      flags:
+        epochs:
+          description: Number of epochs to train
+          default: 5
+        learning-rate:
+          description: Learning rate
+          default: 0.001
+        batch-size:
+          description: Batch size
+          default: 1
+    test:
+      description: Test trained TBCNN model
+      main:
+        classifier/commands train tbcnn
+          --in algorithm_trees.pkl
+          --embed vectors.pkl
+          --logdir .
+      requires:
+        - sampled-trees
+        - vectorized-embeddings
+  resources:
+    algorithms-data:
+      sources:
+        - crawler/algorithms.zip
+    sampled-nodes:
+      sources:
+        - operation: sample-nodes
+          select: algorithm_nodes.pkl
+    sampled-trees:
+      sources:
+        - operation: sample-trees
+          select: algorithm_trees.pkl
+    vectorized-embeddings:
+      sources:
+        - operation: vectorize
+          select: vectors.pkl
+  extra:
+    scalars:
+      loss: algorithms/loss
+      loss_step: algorithms/loss_step

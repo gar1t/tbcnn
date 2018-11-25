@@ -3,7 +3,7 @@
 import time
 import json
 import logging
-import os.path
+import os
 
 CONFIG_FILE = 'crawler/config.json'
 
@@ -22,6 +22,15 @@ def rate_limit(timeout=1.0):
 
 def github_auth(config_file):
     """Parse GitHub basic auth from the config file."""
+    return _env_auth() or _config_auth(config_file)
+
+def _env_auth():
+    try:
+        return (os.environ["GITHUB_USERNAME"], os.environ["GITHUB_ACCESS_TOKEN"])
+    except KeyError:
+        return None
+
+def _config_auth(config_file):
     if not os.path.isfile(config_file):
         logging.warning("%s not found, not using GitHub authentication", config_file)
         return

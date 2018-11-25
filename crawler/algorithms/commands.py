@@ -39,6 +39,11 @@ def fetch_page(url, page=0):
         hooks=utils.request_hooks,
         auth=utils.request_auth_github
     )
+    if req.status_code not in (200,):
+        logging.error(
+            "fetch failed for %s (%i): %s",
+            url, req.status_code, req.content)
+        raise SystemExit(1)
     response = req.json()
     count = response['total_count']
     return response['items'], count

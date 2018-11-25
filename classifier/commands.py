@@ -5,6 +5,7 @@ import logging
 
 import classifier.tbcnn.train as tbcnn_train
 import classifier.tbcnn.test as tbcnn_test
+import  classifier.tbcnn.parameters as tbcnn_params
 
 def main():
     """Commands to train and test classifiers."""
@@ -23,6 +24,19 @@ def main():
     train_parser.add_argument(
         '--embedfile', type=str, help='Learned vector embeddings from the vectorizer'
     )
+    train_parser.add_argument(
+        '--epochs', type=int, default=tbcnn_params.EPOCHS,
+        help='Number of epochs to train')
+    train_parser.add_argument(
+        '--batch-size', type=int, default=tbcnn_params.BATCH_SIZE,
+        help='Training batch size')
+    train_parser.add_argument(
+        '--learning-rate', type=float, default=tbcnn_params.LEARN_RATE,
+        help='Training learning rate')
+    train_parser.add_argument(
+        '--checkpoint-every', type=int, default=tbcnn_params.CHECKPOINT_EVERY,
+        help='Number of training steps for each checkpoint')
+
     train_parser.set_defaults(action='train')
 
     test_parser = subparsers.add_parser(
@@ -45,3 +59,6 @@ def main():
     if args.action == 'test':
         if args.model == 'tbcnn':
             tbcnn_test.test_model(args.logdir, args.infile, args.embedfile)
+
+if __name__ == "__main__":
+    main()
